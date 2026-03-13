@@ -10,11 +10,43 @@ import Val
 eval :: String -> [Val] -> [Val]
 -- Multiplication
 -- if arguments are integers, keep result as integer
-eval "*" (Integer x: Integer y:tl) = Integer (x*y) : tl
+eval "*" (Integer x: Integer y:tl) = Integer (y*x) : tl
 -- if any argument is float, make result a float
-eval "*" (x:y:tl) = (Real $ toFloat x * toFloat y) : tl 
+eval "*" (x:y:tl) = (Real $ toFloat y * toFloat x) : tl 
 -- any remaining cases are stacks too short
 eval "*" _ = error("Stack underflow")
+
+-- Division
+-- if arguments are integers, keep result as integer
+eval "/" (Integer x: Integer y:tl) = Integer (y `div` x) : tl
+-- if any argument is float, make result a float
+eval "/" (x:y:tl) = (Real $ toFloat y / toFloat x) : tl 
+-- any remaining cases are stacks too short
+eval "/" _ = error("Stack underflow")
+
+-- Subtraction
+-- if arguments are integers, keep result as integer
+eval "-" (Integer x: Integer y:tl) = Integer (y-x) : tl
+-- if any argument is float, make result a float
+eval "-" (x:y:tl) = (Real $ toFloat y - toFloat x) : tl 
+-- any remaining cases are stacks too short
+eval "-" _ = error("Stack underflow")
+
+-- Addition
+-- if arguments are integers, keep result as integer
+eval "+" (Integer x: Integer y:tl) = Integer (y+x) : tl
+-- if any argument is float, make result a float
+eval "+" (x:y:tl) = (Real $ toFloat y + toFloat x) : tl 
+-- any remaining cases are stacks too short
+eval "+" _ = error("Stack underflow")
+
+-- Power
+-- if arguments are integers, keep result as integer
+eval "^" (Integer x: Integer y:tl) = Integer (y^x) : tl
+-- if any argument is float, make result a float
+eval "^" (x:y:tl) = (Real $ toFloat y ** toFloat x) : tl 
+-- any remaining cases are stacks too short
+eval "^" _ = error("Stack underflow")
 
 
 -- Duplicate the element at the top of the stack
