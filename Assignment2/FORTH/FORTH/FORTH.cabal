@@ -48,6 +48,8 @@ executable FORTH
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.14 && <5
                       ,flow >=1.0.19
+                      ,hspec
+                      ,QuickCheck
   
   -- Directories containing source files.
   -- hs-source-dirs:      

@@ -3,6 +3,8 @@ module Eval where
 
 import Val
 
+import Data.Char
+
 -- main evaluation function for operators and 
 -- built-in FORTH functions with no output
 -- takes a string and a stack and returns the stack
@@ -52,6 +54,32 @@ eval "^" _ = error("Stack underflow")
 -- Duplicate the element at the top of the stack
 eval "DUP" (x:tl) = (x:x:tl)
 eval "DUP" [] = error("Stack underflow")
+
+
+-- Takes a number from the stack and prints the character with the corresponding ASCII code
+eval "EMIT" (Integer x:tl) = Id [chr x]: tl
+eval "EMIT" [] = error("Stack underflow")
+
+-- Prints a new line (for nice formating)
+eval "CR" tl = Id "\n" : tl
+
+-- converts the argument into a string (needs to work for all types)
+eval "STR" (Integer x : tl) = Id (show x) : tl
+eval "STR" (Real x : tl) = Id (show x) : tl
+eval "STR" (Id x : tl) = Id x : tl
+eval "STR" [] = error("Stack underflow")
+
+-- concatenates 2  strings from the stack (errors if arguments not strings)
+eval "CONCAT2" (Id x: Id y:tl) = Id (y ++ x) : tl
+eval "CONCAT2" [] = error("Stack underflow")
+eval "CONCAT2" [_] = error("Stack underflow")
+
+-- concatenates 3 strings from the stack (errors if arguments not strings)
+eval "CONCAT3" (Id x: Id y: Id z: tl) = Id (z ++ y ++ x) : tl
+eval "CONCAT3" [] = error("Stack underflow")
+eval "CONCAT3" [_] = error("Stack underflow")
+eval "CONCAT3" [_, _] = error("Stack underflow")
+
 
 -- this must be the last rule
 -- it assumes that no match is made and preserves the string as argument
