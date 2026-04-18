@@ -1,3 +1,4 @@
+:- dynamic gvar/2.
 /* match functions by unifying with arguments 
     and infering the result
 */
@@ -10,6 +11,9 @@ typeExp(Fct, T):-
     append(Args, [T], FType), /* make it loook like a function signature */
     functionType(Fname, TArgs), /* get type of arguments from definition */
     typeExpList(FType, TArgs). /* recurisvely match types */
+
+/*var reference*/
+typeExp(Name, T):- atom(Name), gvar(Name, T).
 
 /* propagate types */
 typeExp(T, T).
@@ -51,6 +55,7 @@ infer(Code, T) :-
 bType(int).
 bType(float).
 bType(string).
+bType(bool).
 bType(unit). /* unit type for things that are not expressions */
 /*  functions type.
     The type is a list, the last element is the return type
@@ -76,7 +81,7 @@ bType([H|T]):- bType(H), bType(T).
     variables. Best wy to do this is in your top predicate
 */
 
-deleteGVars():-retractall(gvar), asserta(gvar(_X,_Y):-false()).
+deleteGVars():-retractall(gvar(_,_)), asserta(gvar(_,_):-false()).
 
 /*  builtin functions
     Each definition specifies the name and the 
@@ -90,6 +95,20 @@ fType(fplus, [float, float, float]).
 fType(fToInt, [float,int]).
 fType(iToFloat, [int,float]).
 fType(print, [_X, unit]). /* simple print */
+
+fType(iminus, [int,int,int]).
+fType(fminus, [float,float,float]).
+fType(itimes, [int,int,int]).
+fType(ftimes, [float,float,float]).
+fType(idiv, [int,int,int]).
+fType(fdiv, [float,float,float]).
+
+fType(ilt, [int,int,bool]).
+fType(flt, [float,float,bool]).
+fType(and, [bool,bool,bool]).
+fType(or, [bool,bool,bool]).
+fType(not, [bool,bool]).
+
 
 /* Find function signature
    A function is either buld in using fType or
