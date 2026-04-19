@@ -169,4 +169,49 @@ test(infer_function_with_float, [nondet, true(T == float)]) :-
     assertion(X == float),
     assertion(Y == float).
 
+
+% bonus tests %
+
+test(infer_tuple_expr, [nondet, true(T == tuple([int, float]))]) :-
+    infer([expr(tuple(int, float))], T).
+
+test(infer_tuple_unpack, [nondet, true(T == int)]) :-
+    infer([
+        tupleLet([bind(x, X), bind(y, Y)],
+                 tuple(int, float),
+                 [expr(iplus(x, int))])
+    ], T),
+    assertion(X == int),
+    assertion(Y == float).
+
+test(infer_sum_left, [nondet]) :-
+    infer([expr(inl(int))], T),
+    assertion(T = either(int, _)).
+
+test(infer_match_left, [nondet, true(T == int)]) :-
+    infer([
+        match(inl(int), [
+            case(inl(bind(x, X)), [expr(iplus(x, int))]),
+            case(inr(bind(y, _Y)), [expr(iplus(int, int))])
+        ])
+    ], T),
+    assertion(X == int).
+
+test(infer_match_right, [nondet, true(T == float)]) :-
+    infer([
+        match(inr(float), [
+            case(inl(bind(x, _X)), [expr(fplus(float, float))]),
+            case(inr(bind(y, Y)), [expr(fplus(y, float))])
+        ])
+    ], T),
+    assertion(Y == float).
+
+test(infer_match_branch_mismatch, [fail]) :-
+    infer([
+        match(inl(int), [
+            case(inl(bind(x, _X)), [expr(iplus(x, int))]),
+            case(inr(bind(y, _Y)), [expr(print(y))])
+        ])
+    ], _T).
+
 :-end_tests(typeInf).
