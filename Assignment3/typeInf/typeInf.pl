@@ -49,6 +49,50 @@ typeStatement(gvLet(Name, T, Code), unit):-
     bType(T), /* make sure we have an infered type */
     asserta(gvar(Name, T)). /* add definition to database */
 
+/* global function definition */
+typeStatement(gfLet(Name,Params,BodyCode), unit):-
+    atom(Name),
+    is_list(Params),
+    addBindings(Params),
+    typeCode(BodyCode, RetType),
+    removeBindings(Params),
+    bindingTypes(Params,ParamTypes),
+    append(ParamTypes, [RetType],fType),
+    asserta(gvar(Name,FType)).
+
+/*expression statement*/
+typeStatement(expr(E), T):- typeExp(E,T).
+
+typeStatement(return(E), T):- typeExp(E,T).
+
+/* if statement */
+typeStatement(if(Cond, ThenCode, ElseCode), T):-
+    typeExp(Cond, bool),
+    typeExp(ThenCode, T),
+    typeExp(ElseCode, T).
+
+/* local var with let-in*/
+typeStatement(letIn(Name, VarType, InitExpr, BodyCode), T):-
+    atom(Name),
+    typeExp(InitExpr, VarType),
+    asserta(gvar(Name, VarType)),
+    typeCode(BodyCode, T),
+    retract(gvar(Name, VarType)).
+
+/* for statement */
+typeStatement(for(Name, StartExpr, EndExpr, BodyCode), unit):-
+    atom(Name),
+    typeExp(StartExpr, int),
+    typeExp(EndExpr, int),
+    asserta(gvar(Name, int)),
+    typeCode(BodyCode, unit),
+    retract(gvar(Name, int)).
+
+/* code block */
+typeStatement(block(Code), T):- is_list(Code), typeCode(Code, T).
+
+
+
 /* Code is simply a list of statements. The type is 
     the type of the last statement 
 */
