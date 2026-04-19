@@ -112,7 +112,21 @@ typeStatement(for(Name, StartExpr, EndExpr, BodyCode), unit):-
 /* code block */
 typeStatement(block(Code), T):- is_list(Code), typeCode(Code, T).
 
+/* tuple statement */
+typeStatement(tupleLet(Bindings, TupleExpr, BodyCode), T):-
+    is_list(Bindings),
+    bindingTypes(Bindings, Types),
+    typeExp(TupleExpr, tuple(Types)),
+    substituteBindings(Bindings, BodyCode, NewBodyCode),
+    typeCode(NewBodyCode, T).
 
+/* match statement */
+typeStatement(match(Expr, [case(inl(bind(LName,LT)), LeftCode), case(inr(bind(RName,RT)), RightCode)]), T):-
+    typeExp(Expr, either(LT, RT)),
+    substitute(LName LT, LeftCode, NewLeftCode),
+    substitute(RName RT, RightCode, NewRightCode),
+    typeCode(NewLeftCode, T),
+    typeCode(NewRightCode, T).
 
 /* Code is simply a list of statements. The type is 
     the type of the last statement 
@@ -136,6 +150,16 @@ bType(float).
 bType(string).
 bType(bool).
 bType(unit). /* unit type for things that are not expressions */
+
+/*bonus types*/
+bType(either(L,R)):-
+    bType(L),
+    bType(R).
+
+bType(tuple(Types)):-
+    is_list(Types),
+    bType(Types).
+
 /*  functions type.
     The type is a list, the last element is the return type
     E.g. add: int->int->int is represented as [int, int, int]
@@ -187,6 +211,14 @@ fType(flt, [float,float,bool]).
 fType(and, [bool,bool,bool]).
 fType(or, [bool,bool,bool]).
 fType(not, [bool,bool]).
+
+/* Bonus functions - tuple and sum constructors */
+fType(tuple, TArgs):-
+    append(ElemTypes, [tuple(ElemTypes)], TArgs),
+    ElemTypes = [_,_|_].
+
+fType(inl, [L, either(L, _R)]).
+fType(inr, [R, either(_L, R)]).
 
 
 /* Find function signature
