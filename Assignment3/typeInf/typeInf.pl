@@ -24,6 +24,20 @@ typeExpList([Hin|Tin], [Hout|Tout]):-
     typeExp(Hin, Hout), /* type infer the head */
     typeExpList(Tin, Tout). /* recurse */
 
+
+/* add local bindings to gvar */
+addBindings([]).
+addBindings([bind(Name, T)|Rest]):- asserta(gvar(Name,T)), addBindings(Rest).
+
+/* Remove local bindings from gvar*/
+removeBindings([]).
+removeBindings([bind(Name, T)|Rest]):- retract(gvar(Name,T)), removeBindings(Rest).
+
+/* Extract types from bind */
+bindingTypes([],[]).
+bindingTypes([bind(_Name, T)|Rest],[T|Rest]):- bindingTypes(Rest, TRest).
+
+
 /* TODO: add statements types and their type checking */
 /* global variable definition
     Example:
