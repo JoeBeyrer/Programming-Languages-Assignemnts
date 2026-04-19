@@ -116,15 +116,17 @@ typeStatement(block(Code), T):- is_list(Code), typeCode(Code, T).
 typeStatement(tupleLet(Bindings, TupleExpr, BodyCode), T):-
     is_list(Bindings),
     bindingTypes(Bindings, Types),
-    typeExp(TupleExpr, tuple(Types)),
+    typeExp(TupleExpr, TupleType),
+    TupleType = tuple(Types),
     substituteBindings(Bindings, BodyCode, NewBodyCode),
     typeCode(NewBodyCode, T).
 
 /* match statement */
 typeStatement(match(Expr, [case(inl(bind(LName,LT)), LeftCode), case(inr(bind(RName,RT)), RightCode)]), T):-
-    typeExp(Expr, either(LT, RT)),
-    substitute(LName LT, LeftCode, NewLeftCode),
-    substitute(RName RT, RightCode, NewRightCode),
+    typeExp(Expr, ExprType),
+    ExprType = either(LT, RT),
+    substitute(LName, LT, LeftCode, NewLeftCode),
+    substitute(RName, RT, RightCode, NewRightCode),
     typeCode(NewLeftCode, T),
     typeCode(NewRightCode, T).
 
@@ -212,14 +214,6 @@ fType(and, [bool,bool,bool]).
 fType(or, [bool,bool,bool]).
 fType(not, [bool,bool]).
 
-/* Bonus functions - tuple and sum constructors */
-fType(tuple, TArgs):-
-    append(ElemTypes, [tuple(ElemTypes)], TArgs),
-    ElemTypes = [_,_|_].
-
-fType(inl, [L, either(L, _R)]).
-fType(inr, [R, either(_L, R)]).
-
 
 /* Find function signature
    A function is either buld in using fType or
@@ -234,6 +228,14 @@ functionType(Name, Args):-
 % Check first built in functions
 functionType(Name, Args) :-
     fType(Name, Args), !. % make deterministic
+
+/* Bonus function types - tuple and sum constructors */
+functionType(tuple, TArgs):-
+    append(ElemTypes, [tuple(ElemTypes)], TArgs),
+    ElemTypes = [_,_|_].
+
+functionType(inl, [L, either(L, _R)]).
+functionType(inr, [R, either(_L, R)]).
 
 % This gets wiped out but we have it here to make the linter happy
 gvar(_, _) :- false().
