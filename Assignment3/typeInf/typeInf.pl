@@ -25,17 +25,40 @@ typeExpList([Hin|Tin], [Hout|Tout]):-
     typeExpList(Tin, Tout). /* recurse */
 
 
-/* add local bindings to gvar */
-addBindings([]).
-addBindings([bind(Name, T)|Rest]):- asserta(gvar(Name,T)), addBindings(Rest).
+/* substitute a name with a Prolog variable/type inside a term */
+substitute(Name, Replacement, Term, Replacement):-
+    atom(Term),
+    Term == Name,
+    !.
 
-/* Remove local bindings from gvar*/
-removeBindings([]).
-removeBindings([bind(Name, T)|Rest]):- retract(gvar(Name,T)), removeBindings(Rest).
+substitute(_Name, _Replacement, Term, Term):-
+    var(Term),
+    !.
+
+substitute(_Name, _Replacement, Term, Term):-
+    atomic(Term),
+    !.
+
+substitute(Name, Replacement, Term, NewTerm):-
+    Term =.. [F|Args],
+    substituteList(Name, Replacement, Args, NewArgs),
+    NewTerm =.. [F|NewArgs].
+
+substituteList(_Name, _Replacement, [], []).
+substituteList(Name, Replacement, [H|T], [H2|T2]):-
+    substitute(Name, Replacement, H, H2),
+    substituteList(Name, Replacement, T, T2).
+
+/* apply all parameter bindings to a body */
+substituteBindings([], Code, Code).
+substituteBindings([bind(Name, T)|Rest], CodeIn, CodeOut):-
+    substitute(Name, T, CodeIn, CodeMid),
+    substituteBindings(Rest, CodeMid, CodeOut).
+
 
 /* Extract types from bind */
 bindingTypes([],[]).
-bindingTypes([bind(_Name, T)|Rest],[T|Rest]):- bindingTypes(Rest, TRest).
+bindingTypes([bind(_Name, T)|Rest],[T|TRest]):- bindingTypes(Rest, TRest).
 
 
 /* TODO: add statements types and their type checking */
@@ -50,14 +73,14 @@ typeStatement(gvLet(Name, T, Code), unit):-
     asserta(gvar(Name, T)). /* add definition to database */
 
 /* global function definition */
+/* global function definition */
 typeStatement(gfLet(Name,Params,BodyCode), unit):-
     atom(Name),
     is_list(Params),
-    addBindings(Params),
-    typeCode(BodyCode, RetType),
-    removeBindings(Params),
+    substituteBindings(Params, BodyCode, NewBodyCode),
+    typeCode(NewBodyCode, RetType),
     bindingTypes(Params,ParamTypes),
-    append(ParamTypes, [RetType],fType),
+    append(ParamTypes, [RetType],FType),
     asserta(gvar(Name,FType)).
 
 /*expression statement*/
@@ -68,25 +91,23 @@ typeStatement(return(E), T):- typeExp(E,T).
 /* if statement */
 typeStatement(if(Cond, ThenCode, ElseCode), T):-
     typeExp(Cond, bool),
-    typeExp(ThenCode, T),
-    typeExp(ElseCode, T).
+    typeCode(ThenCode, T),
+    typeCode(ElseCode, T).
 
 /* local var with let-in*/
 typeStatement(letIn(Name, VarType, InitExpr, BodyCode), T):-
     atom(Name),
     typeExp(InitExpr, VarType),
-    asserta(gvar(Name, VarType)),
-    typeCode(BodyCode, T),
-    retract(gvar(Name, VarType)).
+    substitute(Name, VarType, BodyCode, NewBodyCode),
+    typeCode(NewBodyCode, T).
 
 /* for statement */
 typeStatement(for(Name, StartExpr, EndExpr, BodyCode), unit):-
     atom(Name),
     typeExp(StartExpr, int),
     typeExp(EndExpr, int),
-    asserta(gvar(Name, int)),
-    typeCode(BodyCode, unit),
-    retract(gvar(Name, int)).
+    substitute(Name, int, BodyCode, NewBodyCode),
+    typeCode(NewBodyCode, unit).
 
 /* code block */
 typeStatement(block(Code), T):- is_list(Code), typeCode(Code, T).
